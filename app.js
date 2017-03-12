@@ -6,9 +6,9 @@ const winston   = require('winston');
 const fs        = require('fs');
 
 // TODO: These could also be .env variables
-const logDir    = 'logs';
-const logFile   = `results.log`;
-const TenHours = 10*60*60; //In sec
+const logDir       = 'logs';
+const logFile      = `auth0.log`;
+const TenHours     = 10*60*60; //In sec, max token refresh period
 
 // Create the log directory if it does not exist
 if (!fs.existsSync(logDir)) {
@@ -40,10 +40,9 @@ var options = { method: 'POST',
 function getManagementToken(cb) {
   var cached = cache.get(process.env.AUTH0_CLIENT_ID);
   if (cached) {
-    console.log("Returning cached token");
     cb(null, cached);
   } else {
-    console.log("Getting a new token");
+    console.log("Getting a new API v2 token for Logger");
     request(options, function (error, response, body) {
       if (error) {
         console.log(error);
@@ -93,15 +92,20 @@ function pushLogs (accessToken) {
     if (fs.existsSync(logDir + '/' + logFile)) {
         var buf = fs.readFileSync(logDir + '/' + logFile, "utf8");
         var re = /(\"_id\":\"(.*?)\")/g;
-        var re2 = /[0-9]+/g;
         var matches = buf.match(re);
+        
+        // matches.length is the current number of logs in the file
+        cache.put("AUTH0NumberOfLogs", matches.length);
+        
+        // Get the log _id and set as last log position
+        var re2 = /[0-9]+/g;
         checkpointId = matches[matches.length-1].match(re2)[0];
     }
   }
 
   // If last log's _id is not available in the cache and log file is not created yet
   // use the env variable for log _id otherwise first log id is null which forces the 
-  // logging from the begging of the logs currently available in Auth0
+  // logging from the beginning of the logs currently available in Auth0
   var startFromId = process.env.START_FROM_ID ? process.env.START_FROM_ID : null;
   var startCheckpointId = checkpointId === null ? startFromId : checkpointId;
   console.log("Log position : " + startCheckpointId);
@@ -115,11 +119,17 @@ function pushLogs (accessToken) {
     }
 
     if (logs && logs.length) {
-      console.log("Number of logs to store : " + logs.length);
+      var numberOfLogs = cache.get("AUTH0NumberOfLogs");
+      if (!numberOfLogs) numberOfLogs = 0;
+      numberOfLogs += logs.length;
+      cache.put("AUTH0NumberOfLogs", numberOfLogs);
+      
+      console.log("New logs: " + logs.length);
+      console.log("Total logs: " + numberOfLogs);
 
       // Put the newest log entry we will log to file
       cache.put("AUTH0CheckpointID", logs[logs.length - 1]._id);
-      
+
       // write to file
       for (log in logs) {
         logger.info(logs[log]);
