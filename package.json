@@ -4,9 +4,9 @@
   "description": "Auth0 logs to file",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
-  "author": "",
+  "author": "Saltuk Alakus",
   "license": "MIT",
   "dependencies": {
     "dotenv-safe": "^4.0.3",
