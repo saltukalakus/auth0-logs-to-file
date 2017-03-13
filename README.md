@@ -10,11 +10,11 @@ For to receive logs you need `read:logs` scope.
 
 * Copy .env.example as .env in the same folder. Update the .env for your Auth0 Logger client created in the previous step.
 
-    * AUTH0_CLIENT_ID : Your Auth0 client ID for Logger
-    * AUTH0_CLIENT_SECRET : Your Auth0 client secret for Logger
-    * AUTH0_DOMAIN : Your Auth account domain. YOUR_DOMAIN.auth0.com or YOUR_DOMAIN.(au|eu).auth0.com 
+    * AUTH0_CLIENT_ID : Your Auth0 client ID for Logger.
+    * AUTH0_CLIENT_SECRET : Your Auth0 client secret for Logger.
+    * AUTH0_DOMAIN : Your Auth0 account domain. YOUR_DOMAIN.auth0.com or YOUR_DOMAIN.(au|eu).auth0.com 
     * BATCH_SIZE : Batch size to request logs in single API call. Set to 100 which is the default value.
-    * START_FROM_ID : Set the log _id to start logging from a specific point in time. If you want to start from beginning set `null`
+    * START_FROM_ID : Set the log _id to start logging from a specific point in time. If you want to start from beginning set `null`.
     * POLLING_INTERVAL_IN_SEC : Interval where log API is polled in seconds.
     * NEXT_READ_WAIT_IN_SEC : If this value if greater than zero, logs are stored in two pass. This variable also controls the wait period between first and second pass. First pass and second pass should have same logs and order for to store them.
     * TRACK_THE_LATEST_IN_SEC : When the logger reaches to edge of the Logs, it makes extra delay in second pass for Auth0 logs to stabilise. NEXT_READ_WAIT_IN_SEC should also be greater than 0 for this option to take affect. Set it something like 600 which is 10 minutes.
