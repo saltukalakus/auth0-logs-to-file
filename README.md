@@ -1,12 +1,12 @@
 # Auth0 - Logs to File
 
-This project will take all of your Auth0 logs and export them to a file.
+This project is a simple Node.js application which will take all of your Auth0 logs and exports them to `./logs/auth0.logs` in the same folder where this application runs.
 
 ## Configure
 * Install Node.js and Npm in your local environment if you haven't installed yet.
 
-* Create a new connection for your Logger as described [here](https://auth0.com/docs/api/management/v2/tokens#1-create-and-authorize-a-client).
-For to receive logs you need `read:logs` scope.
+* Create a new client for your Logger as described [here](https://auth0.com/docs/api/management/v2/tokens#1-create-and-authorize-a-client).
+Note that, inorder to receive logs from Auth0, you need to set `read:logs` scope for this client.
 
 * Copy .env.example as .env in the same folder. Update the .env for your Auth0 Logger client created in the previous step.
 
@@ -14,13 +14,14 @@ For to receive logs you need `read:logs` scope.
     * AUTH0_CLIENT_SECRET : Your Auth0 client secret for Logger.
     * AUTH0_DOMAIN : Your Auth0 account domain. YOUR_DOMAIN.auth0.com or YOUR_DOMAIN.(au|eu).auth0.com 
     * BATCH_SIZE : Batch size to request logs in single API call. Set to 100 which is the default value.
-    * START_FROM_ID : Set the log _id to start logging from a specific point in time. If you want to start from beginning set `null`.
+    * START_FROM_ID : Set the log _id to start logging from a specific point in time. If you want to start from beginning set `null`. Once the log file is created, application resumes from last log in the log file.
     * POLLING_INTERVAL_IN_SEC : Interval where log API is polled in seconds.
     * NEXT_READ_WAIT_IN_SEC : If this value if greater than zero, logs are stored in two pass. This variable also controls the wait period between first and second pass. First pass and second pass should have same logs and order for to store them.
-    * TRACK_THE_LATEST_IN_SEC : When the logger reaches to edge of the Logs, it makes extra delay in second pass for Auth0 logs to stabilise. NEXT_READ_WAIT_IN_SEC should also be greater than 0 for this option to take affect. Set it something like 600 which is 10 minutes.
+    * TRACK_THE_LATEST_IN_SEC : When the logger reaches to the edge of the Logs, it makes extra delay before the next pass for Auth0 logs to stabilise. NEXT_READ_WAIT_IN_SEC should also be greater than 0 for this option to take affect. Set this something like 600 which is 10 minutes.
 
 ## Usage
 ```bash
+   npm install
    npm start
 ```
 
