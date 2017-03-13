@@ -3,9 +3,31 @@
 This project will take all of your Auth0 logs and export them to a file.
 
 ## Configure
+* Install Node.js and Npm in your local enviroment if you haven't installed yet.
+
+* Create a new connection for your Logger as described [here](https://auth0.com/docs/api/management/v2/tokens#1-create-and-authorize-a-client).
+For to receive logs you need `read:logs` scope.
+
+* Copy .env.example as .env in the same folder. Update the .env for your Auth0 Logger client created in the previous step.
+
+AUTH0_CLIENT_ID=YOUR_CLIENT_FOR_LOGGER
+AUTH0_CLIENT_SECRET=YOUR_CLIENT_SECRET_FOR_LOGGER
+AUTH0_DOMAIN=YOUR_DOMAIN.auth0.com 
+BATCH_SIZE=Batch size to request logs in single API call. Set to 100 which is the default value.
+START_FROM_ID=Set _id to start logging from a specif point, if you want to start from beginning set `null`
+POLLING_INTERVAL_IN_SEC= Interval where log API is called.
 
 ## Usage
+```bash
+   npm start
+```
 
+If you want to generate automated dummy test logs you could modify the `./testbed/log_generator.sh` with your accout settings and call from commandline in Linux or Mac.
+
+```bash
+   $> cd ./testbed
+   $> ./log_generator.sh
+````
 
 ## Issue Reporting
 

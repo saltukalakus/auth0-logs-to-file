@@ -4,10 +4,11 @@ const request = require("request");
 const cache = require('memory-cache');
 const winston   = require('winston');
 const fs        = require('fs');
+const sleep     = require('sleep');
 
 // TODO: These could also be .env variables
 const logDir       = 'logs';
-const logFile      = `auth0.log`;
+const logFile      = 'auth0.log';
 const TenHours     = 10*60*60; //In sec, max token refresh period
 
 // Create the log directory if it does not exist
@@ -82,7 +83,52 @@ function getLogs(domain, token, take, from, cb) {
   });
 }
 
-function pushLogs (accessToken) {
+function arraysEqual(arr1, arr2) {
+    if(arr1.length !== arr2.length) {
+      console.log("2. pass number of logs not equal");
+      return false;
+    }
+        
+    for(var i = arr1.length; i--;) {
+        if(String(arr1[i]) !== String(arr2[i]))
+        {
+          console.log(" Not match in " + i);
+          console.dir(arr1[i]);
+          console.dir(arr2[i]);
+          return false;
+        }          
+    }
+
+    return true;
+}
+
+function saveLogs(logs){
+  var numberOfLogs = cache.get("AUTH0NumberOfLogs");
+  if (!numberOfLogs) numberOfLogs = 0;
+  numberOfLogs += logs.length;
+  cache.put("AUTH0NumberOfLogs", numberOfLogs);
+          
+  console.log("New logs: " + logs.length);
+  console.log("Total logs: " + numberOfLogs);
+
+  // Put the newest log entry we will log to file
+  cache.put("AUTH0CheckpointID", logs[logs.length - 1]._id);
+
+  // write to file
+  for (log in logs) {
+    logger.info(logs[log]);
+  }
+  console.log('Write complete.');
+}
+
+function isTheLatestLogVeryNew(log){
+  var logTime = new Date(log)
+  var cTime = new Date();
+  var res = (cTime > logTime)?(((cTime - logTime) < process.env.TRACK_THE_LATEST_IN_SEC * 1000)?true:false):true;
+  return res;
+}
+
+function transferLogs (accessToken) {
   // Get the last log received from cache
   var checkpointId = cache.get("AUTH0CheckpointID");
 
@@ -119,32 +165,49 @@ function pushLogs (accessToken) {
     }
 
     if (logs && logs.length) {
-      var numberOfLogs = cache.get("AUTH0NumberOfLogs");
-      if (!numberOfLogs) numberOfLogs = 0;
-      numberOfLogs += logs.length;
-      cache.put("AUTH0NumberOfLogs", numberOfLogs);
-      
-      console.log("New logs: " + logs.length);
-      console.log("Total logs: " + numberOfLogs);
+      // If NEXT_READ_WAIT_IN_SEC option is bigger than 0 make a log request two times and 
+      // store only when both requests have same logs.
+      if (process.env.NEXT_READ_WAIT_IN_SEC > 0) {
+        if (logs && logs.length) {
+          cache.put("FirstLog", logs);
+        }
 
-      // Put the newest log entry we will log to file
-      cache.put("AUTH0CheckpointID", logs[logs.length - 1]._id);
-
-      // write to file
-      for (log in logs) {
-        logger.info(logs[log]);
+        if (isTheLatestLogVeryNew(logs[logs.length - 1].date)) {
+          console.log("We are on the edge of Log queue. Forcing into a long sleep.")
+          console.log("Log time : " + new Date(logs[logs.length - 1].date))
+          console.log("Current time : " + new Date());
+          sleep.sleep(parseInt(process.env.TRACK_THE_LATEST_IN_SEC));
+        } else {
+          sleep.sleep(parseInt(process.env.NEXT_READ_WAIT_IN_SEC));
+        }
+        getLogs(process.env.AUTH0_DOMAIN, accessToken, take, startCheckpointId, (logs, err) => {
+          if (logs && logs.length && arraysEqual(logs, cache.get("FirstLog"))) {
+            saveLogs(logs);
+          }
+          cache.put("GetNextBatchCompleted", true);
+        })
+      } else {
+        saveLogs(logs);
+        cache.put("GetNextBatchCompleted", true);
       }
-      
-      console.log('Write complete.');
+    } else {
+      cache.put("GetNextBatchCompleted", true);
     }
   });
 }
 
-setInterval(function() { 
-  getManagementToken(function(err, resp) {
-  if (err) {
-      return console.log(err); 
+cache.put("GetNextBatchCompleted", true);
+cache.put("FirstLog", ["no log"]);
+
+setInterval(function() {
+  if (cache.get("GetNextBatchCompleted")) {
+    cache.put("GetNextBatchCompleted", false);
+    getManagementToken(function(err, resp) {
+      if (err) {
+        return console.log(err); 
+      }
+      console.log("Run in loop");
+      transferLogs(resp.access_token);
+    })  
   }
-  console.log("Run in loop");
-  pushLogs(resp.access_token);
-})}, process.env.POLLING_INTERVAL_IN_SEC * 1000); // in milisec
+}, process.env.POLLING_INTERVAL_IN_SEC * 1000); // in milisec
