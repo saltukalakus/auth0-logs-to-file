@@ -16,7 +16,6 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir);
 }
 
-const tsFormat = () => (new Date()).toLocaleTimeString();
 const logger = new (winston.Logger)({
   transports: [
     new (winston.transports.File)({
@@ -92,7 +91,7 @@ function arraysEqual(arr1, arr2) {
     for(var i = arr1.length; i--;) {
         if(String(arr1[i]) !== String(arr2[i]))
         {
-          console.log(" Not match in " + i);
+          console.log("Not matched in " + i);
           console.dir(arr1[i]);
           console.dir(arr2[i]);
           return false;
